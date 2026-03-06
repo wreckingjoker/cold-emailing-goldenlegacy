@@ -1,0 +1,259 @@
+{
+  "name": "Golden Legacy — Email Send Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 5 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "node-schedule",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {
+          "__rl": true,
+          "value": "1anNPKpCf-8_Vf_LmLBpwd6krT5CDYa8Y_5AAKBCGaoo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "url"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "pending"
+            }
+          ]
+        },
+        "options": {
+          "firstRowIsHeader": true
+        }
+      },
+      "id": "node-sheets-read",
+      "name": "Read Pending Contacts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [220, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_GOOGLE_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": 50
+      },
+      "id": "node-limit",
+      "name": "Daily Limit",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "node-loop",
+      "name": "Loop Over Contacts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retrieve stored template from workflow static data\nconst staticData = $getWorkflowStaticData('global');\nconst template = staticData.emailTemplate || `Dear {{name}},\n\nI hope this message finds you well.\n\nSeven years ago, I began an entrepreneurial journey with a vision to build something meaningful, client-focused, and built on trust. What started as an idea grew into Golden Fortune — a journey shaped by your support, collaboration, and confidence in us. For that, I remain sincerely grateful.\n\nToday, I would like to personally inform you of an important development.\n\nI, Arvind Pal Singh, have officially restructured and rebranded our operations under a new entity — Golden Legacy. This transition reflects internal strategic changes designed to support long-term growth, improved agility, and an enhanced service framework for our valued clients.\n\nWhile the name has evolved, our foundation remains unchanged.\n\nGolden Legacy has been established with a renewed vision — to provide more innovative, responsive, and personalized solutions while maintaining the same integrity, professionalism, and commitment you have always experienced.\n\nUnder Golden Legacy, you can expect:\n  • Greater flexibility in how we collaborate\n  • Enhanced and more personalized client service\n  • Expanded and improved solution offerings\n  • Faster decision-making and response timelines\n  • A stronger focus on your long-term strategic goals\n\nThis transition is a forward-looking step, allowing us to operate with improved efficiency and a sharper focus on delivering measurable value to you.\n\nI deeply value the relationship we have built over the years and sincerely hope to continue our partnership under this new chapter. It would be my privilege to support your future plans through Golden Legacy.\n\nShould you wish to understand more about this transition or explore upcoming opportunities, I would be pleased to arrange a brief call at your convenience.\n\nNew Contact Details:\nCompany Name: Golden Legacy\nWebsite: www.goldenlegacy.ae\nEmail: info@goldenlegacy.ae\nPhone: +971-55-6656007\n\nThank you once again for your continued trust and support. I look forward to strengthening our association and beginning this exciting new chapter together.\n\nWarm regards,\nArvind Pal Singh\nFounder & CEO\nGolden Legacy\nDirect Email: info@goldenlegacy.ae\nMobile: +971-556656007`;\n\nconst items = $input.all();\nreturn items.map(item => {\n  const row = item.json;\n  return {\n    json: {\n      row_number: row.row_number,\n      email: row.email,\n      name: row.name,\n      company: row.company,\n      subject: 'An Important Update from Arvind Pal Singh \\u2014 Golden Legacy',\n      emailBody: template\n        .replace(/\\{\\{name\\}\\}/g, row.name || '')\n        .replace(/\\{\\{company\\}\\}/g, row.company || ''),\n    }\n  };\n});"
+      },
+      "id": "node-template",
+      "name": "Inject Template",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {
+          "ccList": "fatema@goldenfortune.ae"
+        }
+      },
+      "id": "node-gmail",
+      "name": "Send Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1100, 300],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if-error",
+      "name": "Send Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1320, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1anNPKpCf-8_Vf_LmLBpwd6krT5CDYa8Y_5AAKBCGaoo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "url"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "status": "failed",
+            "error": "={{ $json.error?.message || 'Unknown error' }}"
+          },
+          "matchingColumns": ["row_number"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "node-writeback-fail",
+      "name": "Write: Failed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1540, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_GOOGLE_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1anNPKpCf-8_Vf_LmLBpwd6krT5CDYa8Y_5AAKBCGaoo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "url"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "status": "sent",
+            "sent_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": ["row_number"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "node-writeback-success",
+      "name": "Write: Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1540, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_GOOGLE_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Read Pending Contacts", "type": "main", "index": 0 }]]
+    },
+    "Read Pending Contacts": {
+      "main": [[{ "node": "Daily Limit", "type": "main", "index": 0 }]]
+    },
+    "Daily Limit": {
+      "main": [[{ "node": "Loop Over Contacts", "type": "main", "index": 0 }]]
+    },
+    "Loop Over Contacts": {
+      "main": [
+        [],
+        [{ "node": "Inject Template", "type": "main", "index": 0 }]
+      ]
+    },
+    "Inject Template": {
+      "main": [[{ "node": "Send Gmail", "type": "main", "index": 0 }]]
+    },
+    "Send Gmail": {
+      "main": [[{ "node": "Send Failed?", "type": "main", "index": 0 }]]
+    },
+    "Send Failed?": {
+      "main": [
+        [{ "node": "Write: Failed", "type": "main", "index": 0 }],
+        [{ "node": "Write: Sent", "type": "main", "index": 0 }]
+      ]
+    },
+    "Write: Failed": {
+      "main": [[{ "node": "Loop Over Contacts", "type": "main", "index": 0 }]]
+    },
+    "Write: Sent": {
+      "main": [[{ "node": "Loop Over Contacts", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
