@@ -43,7 +43,7 @@ Golden Legacy
 Direct Email: info@goldenlegacy.ae
 Mobile: +971-556656007`
 
-const DEFAULT_SUBJECT = 'An Important Update from Arvind Pal Singh — Golden Legacy'
+const DEFAULT_SUBJECT = 'Official Announcement: Transition from Golden Fortune to Golden Legacy'
 
 export default function TemplateTab() {
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE)
