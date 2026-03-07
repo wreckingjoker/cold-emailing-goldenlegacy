@@ -29,3 +29,10 @@ export const saveTemplate = (template) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ template }),
   });
+
+export const sendNow = (intervalMinutes) =>
+  request('/webhook/send-now', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ intervalMinutes }),
+  });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getStats, startCampaign, pauseCampaign } from '../api/n8n'
+import { getStats, startCampaign, pauseCampaign, sendNow } from '../api/n8n'
 
 function StatCard({ label, value, color }) {
   return (
@@ -16,6 +16,8 @@ export default function CampaignTab() {
   const [error, setError] = useState(null)
   const [toggling, setToggling] = useState(false)
   const [toast, setToast] = useState(null)
+  const [intervalMinutes, setIntervalMinutes] = useState(2)
+  const [sending, setSending] = useState(false)
   const intervalRef = useRef(null)
 
   async function fetchStats() {
@@ -39,6 +41,19 @@ export default function CampaignTab() {
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3500)
+  }
+
+  async function handleSendNow() {
+    setSending(true)
+    try {
+      await sendNow(Number(intervalMinutes))
+      showToast(`Sending started — 1 email every ${intervalMinutes} min.`)
+      setTimeout(fetchStats, 5000)
+    } catch (e) {
+      showToast('Send Now failed — check n8n connection.', 'error')
+    } finally {
+      setSending(false)
+    }
   }
 
   async function handleToggle() {
@@ -137,6 +152,32 @@ export default function CampaignTab() {
           <p className="text-gray-400 text-xs">{sent} of {total} emails sent</p>
         </div>
       )}
+
+      {/* Send Now */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">Send Now</h3>
+          <p className="text-gray-400 text-xs mt-0.5">Send to all pending contacts immediately with a delay between each email to avoid spam filters.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-gray-600 whitespace-nowrap">Interval (minutes)</label>
+          <input
+            type="number"
+            min={1}
+            max={60}
+            value={intervalMinutes}
+            onChange={e => setIntervalMinutes(e.target.value)}
+            className="w-20 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-amber-500"
+          />
+          <button
+            onClick={handleSendNow}
+            disabled={sending || loading}
+            className="px-5 py-2 rounded-lg text-sm font-semibold bg-gray-900 hover:bg-gray-700 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {sending ? 'Queuing...' : 'Send Now'}
+          </button>
+        </div>
+      </div>
 
       {loading && (
         <p className="text-gray-400 text-sm text-center py-8">Loading stats...</p>
