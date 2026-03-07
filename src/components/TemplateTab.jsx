@@ -43,8 +43,11 @@ Golden Legacy
 Direct Email: info@goldenlegacy.ae
 Mobile: +971-556656007`
 
+const DEFAULT_SUBJECT = 'An Important Update from Arvind Pal Singh — Golden Legacy'
+
 export default function TemplateTab() {
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE)
+  const [subject, setSubject] = useState(DEFAULT_SUBJECT)
   const [previewName, setPreviewName] = useState('')
   const [previewCompany, setPreviewCompany] = useState('')
   const [showPreview, setShowPreview] = useState(false)
@@ -86,7 +89,7 @@ export default function TemplateTab() {
     }
     setSaving(true)
     try {
-      await saveTemplate(template)
+      await saveTemplate(template, subject)
       const ts = new Date().toLocaleString()
       setSavedAt(ts)
       showToast('Template saved to n8n.')
@@ -139,10 +142,15 @@ export default function TemplateTab() {
         </div>
       </div>
 
-      {/* Subject line (read-only) */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-        <span className="text-gray-400 text-xs mr-2">Subject:</span>
-        <span className="text-gray-700 text-sm">An Important Update from Arvind Pal Singh — Golden Legacy</span>
+      {/* Subject line (editable) */}
+      <div className="flex items-center bg-white border border-gray-200 rounded-lg px-4 py-3 gap-2">
+        <span className="text-gray-400 text-xs whitespace-nowrap">Subject:</span>
+        <input
+          type="text"
+          value={subject}
+          onChange={e => setSubject(e.target.value)}
+          className="flex-1 text-sm text-gray-700 bg-transparent focus:outline-none"
+        />
       </div>
 
       {/* Merge tag helpers */}
