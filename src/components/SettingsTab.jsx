@@ -74,7 +74,7 @@ export default function SettingsTab() {
         <div className="grid grid-cols-1 gap-3">
           <ReadOnlyField label="Sender Name" value="Arvind Pal Singh" />
           <ReadOnlyField label="Sender Email" value="info@goldenlegacy.ae" />
-          <ReadOnlyField label="CC (always)" value="fatema@goldenfortune.ae" />
+          <ReadOnlyField label="CC (always)" value="virenderk@goldenlegacy.ae" />
         </div>
       </section>
 
