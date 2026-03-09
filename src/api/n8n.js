@@ -23,11 +23,11 @@ export const saveSettings = (settings) =>
     body: JSON.stringify(settings),
   });
 
-export const saveTemplate = (template, subject) =>
+export const saveTemplate = (template, subject, attachmentBase64 = null, attachmentName = null) =>
   request('/webhook/template', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ template, subject }),
+    body: JSON.stringify({ template, subject, attachmentBase64, attachmentName }),
   });
 
 export const sendNow = (intervalMinutes) =>

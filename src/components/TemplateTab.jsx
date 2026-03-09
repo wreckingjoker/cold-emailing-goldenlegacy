@@ -45,7 +45,7 @@ Mobile: +971-556656007`
 
 const DEFAULT_SUBJECT = 'Official Announcement: Transition from Golden Fortune to Golden Legacy'
 
-export default function TemplateTab() {
+export default function TemplateTab({ pdfBase64, pdfName, setPdfBase64, setPdfName }) {
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE)
   const [subject, setSubject] = useState(DEFAULT_SUBJECT)
   const [previewName, setPreviewName] = useState('')
@@ -55,6 +55,7 @@ export default function TemplateTab() {
   const [toast, setToast] = useState(null)
   const [savedAt, setSavedAt] = useState(null)
   const textareaRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -74,6 +75,27 @@ export default function TemplateTab() {
     }, 0)
   }
 
+  function handlePdfSelect(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('PDF must be under 5MB.', 'error')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setPdfBase64(reader.result.split(',')[1])
+      setPdfName(file.name)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  function removePdf() {
+    setPdfBase64(null)
+    setPdfName(null)
+  }
+
   function validateTemplate(t) {
     const valid = ['{{name}}', '{{company}}']
     const found = t.match(/\{\{[^}]+\}\}/g) || []
@@ -89,7 +111,7 @@ export default function TemplateTab() {
     }
     setSaving(true)
     try {
-      await saveTemplate(template, subject)
+      await saveTemplate(template, subject, pdfBase64, pdfName)
       const ts = new Date().toLocaleString()
       setSavedAt(ts)
       showToast('Template saved to n8n.')
@@ -150,6 +172,45 @@ export default function TemplateTab() {
           value={subject}
           onChange={e => setSubject(e.target.value)}
           className="flex-1 text-sm text-gray-700 bg-transparent focus:outline-none"
+        />
+      </div>
+
+      {/* PDF Attachment */}
+      <div className="flex items-center bg-white border border-gray-200 rounded-lg px-4 py-3 gap-3">
+        <span className="text-gray-400 text-xs whitespace-nowrap">Attachment:</span>
+        {pdfName ? (
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <svg className="w-4 h-4 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm text-gray-700 truncate">{pdfName}</span>
+            <button
+              onClick={removePdf}
+              className="ml-auto shrink-0 text-xs px-2 py-0.5 text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 rounded transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="text-xs px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            Attach PDF
+          </button>
+        )}
+        {!pdfName && (
+          <span className="text-gray-400 text-xs">Max 5MB</span>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf"
+          className="hidden"
+          onChange={handlePdfSelect}
         />
       </div>
 

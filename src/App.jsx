@@ -14,6 +14,8 @@ const TABS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('campaign')
+  const [pdfBase64, setPdfBase64] = useState(null)
+  const [pdfName, setPdfName] = useState(null)
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
@@ -48,7 +50,7 @@ export default function App() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
         {activeTab === 'campaign' && <CampaignTab />}
         {activeTab === 'contacts' && <ContactsTab />}
-        {activeTab === 'template' && <TemplateTab />}
+        {activeTab === 'template' && <TemplateTab pdfBase64={pdfBase64} pdfName={pdfName} setPdfBase64={setPdfBase64} setPdfName={setPdfName} />}
         {activeTab === 'settings' && <SettingsTab />}
       </main>
     </div>
