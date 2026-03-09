@@ -36,3 +36,10 @@ export const sendNow = (intervalMinutes) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ intervalMinutes }),
   });
+
+export const addContact = (contact) =>
+  request('/webhook/add-contact', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(contact),
+  });

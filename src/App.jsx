@@ -3,6 +3,7 @@ import CampaignTab from './components/CampaignTab'
 import ContactsTab from './components/ContactsTab'
 import TemplateTab from './components/TemplateTab'
 import SettingsTab from './components/SettingsTab'
+import LoginPage from './components/LoginPage'
 import brandLogo from '../brand-logo.png'
 
 const TABS = [
@@ -13,9 +14,14 @@ const TABS = [
 ]
 
 export default function App() {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem('gl_auth') === '1')
   const [activeTab, setActiveTab] = useState('campaign')
   const [pdfBase64, setPdfBase64] = useState(null)
   const [pdfName, setPdfName] = useState(null)
+
+  if (!authed) {
+    return <LoginPage onLogin={() => setAuthed(true)} />
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
@@ -23,7 +29,15 @@ export default function App() {
       <header className="border-b border-gray-200 bg-white shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <img src={brandLogo} alt="Golden Legacy" className="h-12 w-auto" />
-          <span className="text-gray-400 text-xs">info@goldenlegacy.ae</span>
+          <div className="flex items-center gap-4">
+            <span className="text-gray-400 text-xs">info@goldenlegacy.ae</span>
+            <button
+              onClick={() => { sessionStorage.removeItem('gl_auth'); setAuthed(false) }}
+              className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Tab Bar */}

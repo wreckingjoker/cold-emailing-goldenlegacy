@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getContacts } from '../api/n8n'
+import { getContacts, addContact } from '../api/n8n'
 
 const STATUS_STYLES = {
   pending: 'bg-amber-50 text-amber-600',
@@ -10,11 +10,20 @@ const STATUS_STYLES = {
 
 const FILTERS = ['all', 'pending', 'sent', 'failed', 'opened']
 
+const EMPTY_FORM = { company: '', email: '' }
+
 export default function ContactsTab() {
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
+
+  // Add contact modal state
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [formError, setFormError] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [successMsg, setSuccessMsg] = useState(null)
 
   async function load() {
     setLoading(true)
@@ -35,6 +44,43 @@ export default function ContactsTab() {
     ? contacts
     : contacts.filter(c => c.status === filter)
 
+  function openModal() {
+    setForm(EMPTY_FORM)
+    setFormError(null)
+    setShowModal(true)
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    setFormError(null)
+  }
+
+  function handleChange(e) {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setFormError(null)
+
+    if (!form.company.trim()) return setFormError('Company name is required.')
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      return setFormError('A valid email address is required.')
+
+    setSaving(true)
+    try {
+      await addContact({ company: form.company.trim(), email: form.email.trim() })
+      setSuccessMsg(`${form.company} added successfully.`)
+      setShowModal(false)
+      load()
+      setTimeout(() => setSuccessMsg(null), 4000)
+    } catch (err) {
+      setFormError('Failed to add contact. Check that /webhook/add-contact is active in n8n.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Header row */}
@@ -43,14 +89,29 @@ export default function ContactsTab() {
           <h2 className="text-lg font-semibold text-gray-900">Contacts</h2>
           <p className="text-gray-400 text-sm mt-0.5">{contacts.length} total</p>
         </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="text-xs px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors disabled:opacity-40 text-gray-600"
-        >
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={openModal}
+            className="text-xs px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors"
+          >
+            + Add Contact
+          </button>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="text-xs px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors disabled:opacity-40 text-gray-600"
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
       </div>
+
+      {/* Success toast */}
+      {successMsg && (
+        <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+          {successMsg}
+        </div>
+      )}
 
       {/* Filter pills */}
       <div className="flex gap-2 flex-wrap">
@@ -125,6 +186,69 @@ export default function ContactsTab() {
 
       {loading && (
         <p className="text-gray-400 text-sm text-center py-8">Loading contacts...</p>
+      )}
+
+      {/* Add Contact Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-900">Add Contact</h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Company Name</label>
+                <input
+                  name="company"
+                  value={form.company}
+                  onChange={handleChange}
+                  placeholder="e.g. Acme Corp"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                <input
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="e.g. john@acme.com"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+
+              {formError && (
+                <p className="text-red-500 text-xs">{formError}</p>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Add Contact'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )
